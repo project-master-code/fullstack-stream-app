@@ -4,10 +4,10 @@ const moviesRouter = Router();
 
 /**
  * @route GET /api/movies
- * @desc Get movies
+ * @desc Get all movies
  */
 moviesRouter.get('/', (req: Request, res: Response) => {
-  res.send(' get a movies');
+  res.send(' get all movies');
 });
 
 /**
@@ -33,4 +33,21 @@ moviesRouter.put('/:id', (req: Request, res: Response) => {
 moviesRouter.delete('/:id', (req: Request, res: Response) => {
   res.send(' delete a movies');
 });
+
+/**
+ * @route GET /api/movies/:id
+ * @desc get movie details by id
+ */
+moviesRouter.get('/:id', (req: Request, res: Response) => {
+  res.send(' get movie details by id');
+});
+
+/**
+ * @route GET /api/movies/genre/:genreId
+ * @desc get movie by genre name
+ */
+moviesRouter.get('/genre/:genreId', (req: Request, res: Response) => {
+  res.send(' get movie by genre name');
+});
+
 export default moviesRouter;

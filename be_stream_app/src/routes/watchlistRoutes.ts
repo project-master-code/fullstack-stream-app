@@ -14,7 +14,7 @@ watchlistRouter.post('/', (req: Request, res: Response) => {
  * @route DELETE /api/watchlist
  * @desc Remove movie or TV show from watchlist
  */
-watchlistRouter.delete('/', (req: Request, res: Response) => {
+watchlistRouter.delete('/:itemId', (req: Request, res: Response) => {
   res.send('Remove movie or TV show from watchlist');
 });
 /**

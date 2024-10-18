@@ -3,10 +3,10 @@ import { Router } from 'express';
 
 const authRouter = Router();
 /**
- * @route POST /api/auth/register
+ * @route POST /api/auth/signup
  * @desc Register a user
  */
-authRouter.post('/register', (req: Request, res: Response) => {
+authRouter.post('/signup', (req: Request, res: Response) => {
   res.send('ini adalah register route');
 });
 /**
@@ -18,17 +18,17 @@ authRouter.post('/login', (req: Request, res: Response) => {
 });
 
 /**
- * @route POST /api/auth/forgetpassword
+ * @route POST /api/auth/forget-password
  * @desc forget password a user
  */
-authRouter.post('/forgetpassword', (req: Request, res: Response) => {
+authRouter.post('/forget-password', (req: Request, res: Response) => {
   res.send('ini adalah forget password route');
 });
 /**
- * @route POST /api/auth/resetpassword
+ * @route POST /api/auth/reset-password
  * @desc reset password a user
  */
-authRouter.post('/resetpassword', (req: Request, res: Response) => {
+authRouter.post('/reset-password', (req: Request, res: Response) => {
   res.send('ini adalah reset password route');
 });
 
