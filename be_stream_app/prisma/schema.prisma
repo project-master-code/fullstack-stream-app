@@ -1,0 +1,374 @@
+datasource db {
+  provider = "postgresql" // or "mysql" or "sqlite" depending on your environment
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum SubscriptionPlan {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum ContentRating {
+  G
+  PG
+  PG13
+  R
+  NC17
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum Language {
+  EN
+  ES
+  FR
+  DE
+  IT
+  JP
+}
+
+// --------------- USER MODEL ----------------
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  password        String
+  name            String
+  avatarUrl       String? // Optional avatar for user profiles
+  bio             String? // User bio for profiles
+  role            UserRole         @default(USER) // Role-based access control
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  watchlist       Watchlist[]
+  viewed          Viewed[]
+  reviews         Review[]
+  comments        Comment[]
+  likes           Like[]
+  searchHistories SearchHistory[]
+  subscription    Subscription?    @relation(fields: [subscriptionId], references: [id])
+  recommendations Recommendation[]
+  notifications   Notification[]
+  deletedAt       DateTime?        @db.Timestamptz // For soft delete
+  subscriptionId  Int?
+  flaggedContent  FlaggedContent[] // Users can flag content for moderation
+  Admin           Admin[]
+  AuditLog        AuditLog[]
+  Payment         Payment[]
+}
+
+// --------------- ROLE-BASED ACCESS CONTROL (RBAC) ----------------
+model Admin {
+  id          Int        @id @default(autoincrement())
+  user        User       @relation(fields: [userId], references: [id])
+  userId      Int
+  permissions String[] // Define specific permissions for admins/moderators
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  AuditLog    AuditLog[]
+}
+
+// --------------- MOVIE MODEL ----------------
+model Movie {
+  id                   Int               @id @default(autoincrement())
+  title                String
+  description          String
+  releaseDate          DateTime
+  rating               ContentRating // Enum for content rating
+  genres               Genre[]           @relation("MovieGenres")
+  reviews              Review[]
+  comments             Comment[]
+  likes                Like[]
+  tags                 Tag[]             @relation("MovieTags")
+  metadata             ContentMetadata[]
+  availableInLanguages Language[] // Movies available in multiple languages
+  availableRegions     Region[] // Regional licensing of content
+  licenseExpiresAt     DateTime? // License expiration date
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?        @db.Timestamptz
+  flaggedContent FlaggedContent[] // Flagged content for moderation
+  Watchlist      Watchlist[]
+  Viewed         Viewed[]
+  Recommendation Recommendation[]
+}
+
+// --------------- TV SHOW MODEL ----------------
+model TVShow {
+  id                   Int               @id @default(autoincrement())
+  title                String
+  description          String
+  releaseDate          DateTime
+  genres               Genre[]           @relation("TVShowGenres")
+  reviews              Review[]
+  comments             Comment[]
+  likes                Like[]
+  seasons              Season[]
+  tags                 Tag[]             @relation("TVShowTags")
+  metadata             ContentMetadata[]
+  availableInLanguages Language[] // TV Shows available in multiple languages
+  availableRegions     Region[] // Regional licensing of content
+  licenseExpiresAt     DateTime? // License expiration date
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?        @db.Timestamptz
+  flaggedContent FlaggedContent[] // Flagged content for moderation
+  Watchlist      Watchlist[]
+  Viewed         Viewed[]
+  Recommendation Recommendation[]
+}
+
+// --------------- SEASON MODEL ----------------
+model Season {
+  id           Int       @id @default(autoincrement())
+  seasonNumber Int
+  tvShow       TVShow    @relation(fields: [tvShowId], references: [id])
+  tvShowId     Int
+  episodes     Episode[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime? @db.Timestamptz
+}
+
+// --------------- EPISODE MODEL ----------------
+model Episode {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String
+  episodeNumber Int
+  releaseDate   DateTime
+  season        Season    @relation(fields: [seasonId], references: [id])
+  seasonId      Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? @db.Timestamptz
+}
+
+// --------------- GENRE MODEL ----------------
+model Genre {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  movies    Movie[]  @relation("MovieGenres")
+  tvShows   TVShow[] @relation("TVShowGenres")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------- REVIEW MODEL ----------------
+model Review {
+  id        Int       @id @default(autoincrement())
+  content   String
+  rating    Float
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+  userId    Int
+  movie     Movie?    @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?   @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  deletedAt DateTime? @db.Timestamptz
+}
+
+// --------------- SUBSCRIPTION MODEL ----------------
+model Subscription {
+  id        Int              @id @default(autoincrement())
+  plan      SubscriptionPlan
+  price     Float
+  userId    Int?
+  startedAt DateTime
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?        @db.Timestamptz
+  User      User[]
+  Payment   Payment[]
+}
+
+// --------------- WATCHLIST MODEL ----------------
+model Watchlist {
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId], references: [id])
+  userId    Int
+  movie     Movie?    @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?   @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? @db.Timestamptz
+}
+
+// --------------- VIEWED MODEL ----------------
+model Viewed {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  movie     Movie?   @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?  @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  viewedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------- COMMENT MODEL ----------------
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  movie     Movie?   @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?  @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+}
+
+// --------------- LIKE MODEL ----------------
+model Like {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  movie     Movie?   @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?  @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------- SEARCH HISTORY MODEL ----------------
+model SearchHistory {
+  id         Int      @id @default(autoincrement())
+  query      String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  searchedAt DateTime @default(now())
+}
+
+// --------------- TAG MODEL ----------------
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  movies    Movie[]  @relation("MovieTags")
+  tvShows   TVShow[] @relation("TVShowTags")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------- CONTENT METADATA MODEL ----------------
+model ContentMetadata {
+  id        Int        @id @default(autoincrement())
+  duration  Int // Duration in minutes
+  cast      String[] // Array of cast members
+  movie     Movie?     @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?    @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  languages Language[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// --------------- RECOMMENDATION MODEL ----------------
+model Recommendation {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  movie     Movie?   @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?  @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  reason    String // Reason for recommendation
+  createdAt DateTime @default(now())
+}
+
+// --------------- NOTIFICATION MODEL ----------------
+model Notification {
+  id        Int      @id @default(autoincrement())
+  content   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------- AUDIT LOG MODEL ----------------
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String // Describe the action (e.g., "USER_CREATED", "PAYMENT_PROCESSED")
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  admin     Admin?   @relation(fields: [adminId], references: [id])
+  adminId   Int?
+  timestamp DateTime @default(now())
+  details   String // Detailed description of the action taken
+}
+
+// --------------- PAYMENT & BILLING MODELS ----------------
+model Payment {
+  id             Int           @id @default(autoincrement())
+  amount         Float
+  status         PaymentStatus
+  user           User          @relation(fields: [userId], references: [id])
+  userId         Int
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  subscriptionId Int
+  paymentDate    DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Transaction    Transaction[]
+}
+
+model Transaction {
+  id              Int           @id @default(autoincrement())
+  payment         Payment       @relation(fields: [paymentId], references: [id])
+  paymentId       Int
+  amount          Float
+  status          PaymentStatus
+  transactionDate DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// --------------- REGION MODEL ----------------
+model Region {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  movies    Movie[]
+  tvShows   TVShow[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------- CONTENT MODERATION (FLAGGING) ----------------
+model FlaggedContent {
+  id        Int      @id @default(autoincrement())
+  reason    String // Reason for flagging the content
+  movie     Movie?   @relation(fields: [movieId], references: [id])
+  movieId   Int?
+  tvShow    TVShow?  @relation(fields: [tvShowId], references: [id])
+  tvShowId  Int?
+  flaggedBy User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+}
